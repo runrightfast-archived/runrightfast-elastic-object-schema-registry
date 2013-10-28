@@ -57,10 +57,32 @@ describe('database', function() {
 			version : '1.0.0',
 			description : 'Couchbase config schema'
 		});
-		idsToDelete.push(objectSchemaId(schema.namespace, schema.version));
 		database.createObjectSchema(schema).then(function(result) {
 			console.log(JSON.stringify(result, undefined, 2));
+			idsToDelete.push(result._id);
 			done();
+		}, function(err) {
+			console.error('create failed : ' + err);
+			done(err);
+		});
+	});
+
+	it('can get an ObjectSchema by id', function(done) {
+		var schema = new ObjectSchema({
+			namespace : 'ns://runrightfast.co/couchbase',
+			version : '1.0.0',
+			description : 'Couchbase config schema'
+		});
+		database.createObjectSchema(schema).then(function(result) {
+			console.log('create response: ' + JSON.stringify(result, undefined, 2));
+			idsToDelete.push(result._id);
+
+			database.getObjectSchema(result._id).then(function(result) {
+				console.log('retrieved : ' + JSON.stringify(result, undefined, 2));
+				var objectSchema = new ObjectSchema(result._source);
+				done();
+			}, done);
+
 		}, function(err) {
 			console.error('create failed : ' + err);
 			done(err);

@@ -138,4 +138,52 @@ describe('database', function() {
 		});
 	});
 
+	it('can return the listing of namespaces along with the number of versions per namespace',function(done){
+		var schemas = [
+			new ObjectSchema({
+				namespace : 'ns://runrightfast.co/couchbase',
+				version : '1.0.0',
+				description : 'Couchbase config schema'
+			}),
+			new ObjectSchema({
+				namespace : 'ns://runrightfast.co/couchbase',
+				version : '1.0.1',
+				description : 'Couchbase config schema'
+			}),
+			new ObjectSchema({
+				namespace : 'ns://runrightfast.co/couchbase/1',
+				version : '2.0.0',
+				description : 'Couchbase config schema'
+			}),
+		];
+		schemas.forEach(function(schema){
+			idsToDelete.push(schema.id);	
+		});	
+
+		var promises = schemas.map(function(schema){
+			return database.createObjectSchema(schema);
+		});
+
+		when.all(promises).then(function(result) {
+			console.log('create response: ' + JSON.stringify(result, undefined, 2));
+
+			database.database.refreshIndex().then(function(){
+				database.getObjectSchemaNamespaces().then(function(result){
+					console.log('getObjectSchemaNamespaces() : ' + JSON.stringify(result,undefined,2));
+					try{
+						expect(result['ns://runrightfast.co/couchbase']).to.equal(2);
+						expect(result['ns://runrightfast.co/couchbase/1']).to.equal(1);
+						done();
+					}catch(err){
+						done(err);
+					}
+				});
+			},done);
+
+		}, function(err) {
+			console.error('create failed : ' + err);
+			done(err);
+		});
+	});
+
 });

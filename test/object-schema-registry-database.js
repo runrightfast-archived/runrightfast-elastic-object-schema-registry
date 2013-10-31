@@ -53,12 +53,12 @@ describe('database', function() {
 							console.log('SET MAPPING: ' + JSON.stringify(result,undefined,2));
 							done();
 						},done);
-				},done)
-		},done)
+				},done);
+		},done);
 	});
 
 	afterEach(function(done) {
-		database.deleteObjectSchemas(idsToDelete).then(function(result) {
+		database.deleteObjectSchemas(idsToDelete).then(function() {
 			idsToDelete = [];
 			database.database.refreshIndex().then(function(){
 				done();
@@ -99,7 +99,7 @@ describe('database', function() {
 				console.log('retrieved : ' + JSON.stringify(result, undefined, 2));
 				//validates that the returned object is a valid ObjectSchema
 				var objectSchema = new ObjectSchema(result._source);
-				console.log('objectSchema : ' + JSON.stringify(result, undefined, 2));
+				console.log('objectSchema : ' + JSON.stringify(objectSchema, undefined, 2));
 				done();
 			}, done);
 
@@ -126,6 +126,7 @@ describe('database', function() {
 					expect(result.hits.total).to.equal(1);
 					//validates that the returned object is a valid ObjectSchema
 					var objectSchema = new ObjectSchema(result.hits.hits[0]._source);
+					console.log('objectSchema : ' + JSON.stringify(objectSchema, undefined, 2));
 					done();
 				}catch(err){
 					done(err);

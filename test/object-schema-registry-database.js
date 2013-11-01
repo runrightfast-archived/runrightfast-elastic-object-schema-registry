@@ -85,6 +85,28 @@ describe('database', function() {
 		});
 	});
 
+	it('creating an ObjectSchema with the same namespace and version will fail', function(done) {
+		var schema = new ObjectSchema({
+			namespace : 'ns://runrightfast.co/couchbase',
+			version : '1.0.0',
+			description : 'Couchbase config schema'
+		});
+		idsToDelete.push(schema.id);
+		database.createObjectSchema(schema).then(function(result) {
+			console.log(JSON.stringify(result, undefined, 2));
+			database.createObjectSchema(schema).then(function(result) {
+				console.log(JSON.stringify(result, undefined, 2));
+				done(new Error('expected create to fail'));
+			}, function(err) {
+				console.error('create failed : ' + err);
+				done();
+			});
+		}, function(err) {
+			console.error('create failed : ' + err);
+			done(err);
+		});
+	});
+
 	it('can get an ObjectSchema by id', function(done) {
 		var schema = new ObjectSchema({
 			namespace : 'ns://runrightfast.co/couchbase',
@@ -137,6 +159,37 @@ describe('database', function() {
 			console.error('create failed : ' + err);
 			done(err);
 		});
+	});
+
+	it('#findByNamespaceVersion - namespace and version are required',function(done){
+		var promises = [];
+		promises.push (when(database.findByNamespaceVersion(),
+			function(result) {
+				throw new Error('validation should have failed');
+			}, 
+			function(err){
+				console.log(err);
+				return;				
+			}));
+		promises.push (when(database.findByNamespaceVersion(null,'1.0.0'),
+			function(result) {
+				throw new Error('validation should have failed');
+			}, 
+			function(err){
+				console.log(err);
+				return;				
+			}));
+
+		promises.push (when(database.findByNamespaceVersion('ns://user'),
+			function(result) {
+				throw new Error('validation should have failed');
+			}, 
+			function(err){
+				console.log(err);
+				return;				
+			}));
+
+		when(when.all(promises),function(){done();},done);
 	});
 
 	it('can return the listing of namespaces along with the number of versions per namespace',function(done){

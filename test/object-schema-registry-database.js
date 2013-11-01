@@ -240,4 +240,114 @@ describe('database', function() {
 		});
 	});
 
+	it('#setObjectSchema', function(done) {
+		var schema = new ObjectSchema({
+			namespace : 'ns://runrightfast.co/couchbase',
+			version : '1.0.0',
+			description : 'Couchbase config schema'
+		});
+		idsToDelete.push(schema.id);
+		database.createObjectSchema(schema).then(function(result) {
+			console.log(JSON.stringify(result, undefined, 2));
+			try{
+				var type = {
+					description : 'person name',
+					properties :{
+						fname:{
+							type: 'String',
+							constraints:[
+								{method: 'required',args:[]}
+							]
+						}
+					}
+				};
+				schema.addType('PersonName',type);
+				when(database.setObjectSchema(schema,result._version,'azappala'),
+					function(result){
+						console.log('setObjectSchema() result: ' + JSON.stringify(result,undefined,2));
+						done();
+					},
+					function(err){
+						console.error('setObjectSchema() failed : ' + err);
+						done(err);
+					});
+			}catch(err){
+				done(err);
+			}
+		}, function(err) {
+			console.error('create failed : ' + err);
+			done(err);
+		});
+	});
+
+	it('#getObjectSchemas',function(done){
+		var objectSchemas = [];
+		var i;
+		for(i=0;i<10;i++){
+			objectSchemas.push(new ObjectSchema({
+				namespace : 'ns://runrightfast.co/runrightfast-api-gateway',
+				version : '1.0.' + i,
+				description : 'runrightfast-api-gateway config'
+			}));
+		}
+
+		var promises = lodash.foldl(objectSchemas,function(promises,objectSchema){
+			idsToDelete.push(objectSchema.id);
+			promises.push(database.createObjectSchema(objectSchema));
+			return promises;
+		},[]);
+
+		when(when.all(promises),
+			function(result){
+				console.log(JSON.stringify(result,undefined,2));
+				var ids = objectSchemas.map(function(objectSchema){
+					return objectSchema.id;
+				});
+				when(database.getObjectSchemas(ids),
+					function(result){
+						try{
+							console.log(JSON.stringify(result,undefined,2));
+							expect(result.docs.length).to.equal(10);
+							done();
+						}catch(err){
+							done(err);
+						}
+					}
+				)
+				
+			},
+			done
+		)
+	});
+
+	it('#deleteObjectSchema',function(done){
+		var schema = new ObjectSchema({
+			namespace : 'ns://runrightfast.co/couchbase',
+			version : '1.0.0',
+			description : 'Couchbase config schema'
+		});
+		idsToDelete.push(schema.id);
+		database.createObjectSchema(schema).then(function(result) {
+			console.log(JSON.stringify(result, undefined, 2));
+			when(database.deleteObjectSchema(schema.id),
+				function(result){
+					when(database.getObjectSchema(schema.id),
+						function(result){
+							console.log(JSON.stringify(result, undefined, 2));
+							done(new Error('expected error because entity should not exist'));
+						},
+						function(err){
+							console.log(err);
+							done();
+						}
+					);
+				},
+				done
+			);
+		}, function(err) {
+			console.error('create failed : ' + err);
+			done(err);
+		});
+	});
+
 });

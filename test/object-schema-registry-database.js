@@ -164,7 +164,7 @@ describe('database', function() {
 	it('#findByNamespaceVersion - namespace and version are required',function(done){
 		var promises = [];
 		promises.push (when(database.findByNamespaceVersion(),
-			function(result) {
+			function() {
 				throw new Error('validation should have failed');
 			}, 
 			function(err){
@@ -172,7 +172,7 @@ describe('database', function() {
 				return;				
 			}));
 		promises.push (when(database.findByNamespaceVersion(null,'1.0.0'),
-			function(result) {
+			function() {
 				throw new Error('validation should have failed');
 			}, 
 			function(err){
@@ -181,7 +181,7 @@ describe('database', function() {
 			}));
 
 		promises.push (when(database.findByNamespaceVersion('ns://user'),
-			function(result) {
+			function() {
 				throw new Error('validation should have failed');
 			}, 
 			function(err){
@@ -237,6 +237,18 @@ describe('database', function() {
 		}, function(err) {
 			console.error('create failed : ' + err);
 			done(err);
+		});
+	});
+
+	it('#getObjectSchemaNamespaces() - returns {} if there are no ObjectSchemas',function(done){
+		database.getObjectSchemaNamespaces().then(function(result){
+			console.log('getObjectSchemaNamespaces() : ' + JSON.stringify(result,undefined,2));
+			try{
+				expect(lodash.keys(result).length).to.equal(0);
+				done();
+			}catch(err){
+				done(err);
+			}
 		});
 	});
 
@@ -313,11 +325,10 @@ describe('database', function() {
 							done(err);
 						}
 					}
-				)
-				
+				);				
 			},
 			done
-		)
+		);
 	});
 
 	it('#deleteObjectSchema',function(done){
@@ -330,7 +341,7 @@ describe('database', function() {
 		database.createObjectSchema(schema).then(function(result) {
 			console.log(JSON.stringify(result, undefined, 2));
 			when(database.deleteObjectSchema(schema.id),
-				function(result){
+				function(){
 					when(database.getObjectSchema(schema.id),
 						function(result){
 							console.log(JSON.stringify(result, undefined, 2));
@@ -440,6 +451,67 @@ describe('database', function() {
 				},done);
 			},done);
 
+		}, function(err) {
+			console.error('create failed : ' + err);
+			done(err);
+		});
+	});
+
+	it('#getObjectSchemaVersions - more than 10 versions triggers paging behind the scenes',function(done){
+		var objectSchemas = [];
+		var i;
+		for(i=0;i<15;i++){
+			objectSchemas.push(new ObjectSchema({
+				namespace : 'ns://runrightfast.co/runrightfast-api-gateway',
+				version : '1.0.' + i,
+				description : 'runrightfast-api-gateway config'
+			}));
+		}
+
+		var promises = objectSchemas.map(function(schema){
+			idsToDelete.push(schema.id);
+			return database.createObjectSchema(schema);
+		});
+
+		when.all(promises).then(function(result) {
+			console.log('create response: ' + JSON.stringify(result, undefined, 2));
+
+			database.database.refreshIndex().then(function(){
+				database.getObjectSchemaVersions('ns://runrightfast.co/runrightfast-api-gateway').then(function(result){
+					console.log('getObjectSchemaVersions() : ' + JSON.stringify(result,undefined,2));
+					try{
+						expect(lodash.isArray(result)).to.equal(true);
+						expect(result.length).to.equal(15);
+						done();
+					}catch(err){
+						done(err);
+					}
+				},done);
+			},done);
+
+		}, function(err) {
+			console.error('create failed : ' + err);
+			done(err);
+		});
+	});
+
+	it('#findObjectSchemasByField()',function(done){
+		var schema = new ObjectSchema({
+			namespace : 'ns://runrightfast.co/couchbase',
+			version : '1.0.0',
+			description : 'Couchbase config schema'
+		});
+		idsToDelete.push(schema.id);
+		database.createObjectSchema(schema).then(function(result) {
+			console.log(JSON.stringify(result, undefined, 2));
+			database.findObjectSchemasByField({field:'description',value:'couchbase'}).then(
+				function(result){
+					console.log('findObjectSchemasByField() result: '+JSON.stringify(result,undefined,2));
+					expect(result.hits.total).to.equal(1);
+					done();
+				},
+				done
+			);
 		}, function(err) {
 			console.error('create failed : ' + err);
 			done(err);

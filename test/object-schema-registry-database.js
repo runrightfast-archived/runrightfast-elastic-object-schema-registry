@@ -350,4 +350,101 @@ describe('database', function() {
 		});
 	});
 
+	it('#getObjectSchemaVersions',function(done){
+		var schemas = [
+			new ObjectSchema({
+				namespace : 'ns://runrightfast.co/couchbase',
+				version : '1.0.0',
+				description : 'Couchbase config schema'
+			}),
+			new ObjectSchema({
+				namespace : 'ns://runrightfast.co/couchbase',
+				version : '1.0.1',
+				description : 'Couchbase config schema'
+			}),
+			new ObjectSchema({
+				namespace : 'ns://runrightfast.co/couchbase/1',
+				version : '2.0.0',
+				description : 'Couchbase config schema'
+			}),
+		];
+		schemas.forEach(function(schema){
+			idsToDelete.push(schema.id);	
+		});	
+
+		var promises = schemas.map(function(schema){
+			return database.createObjectSchema(schema);
+		});
+
+		when.all(promises).then(function(result) {
+			console.log('create response: ' + JSON.stringify(result, undefined, 2));
+
+			database.database.refreshIndex().then(function(){
+				database.getObjectSchemaVersions('ns://runrightfast.co/couchbase').then(function(result){
+					console.log('getObjectSchemaVersions() : ' + JSON.stringify(result,undefined,2));
+					try{
+						expect(lodash.isArray(result)).to.equal(true);
+						expect(result.length).to.equal(2);
+						done();
+					}catch(err){
+						done(err);
+					}
+				},done);
+			},done);
+
+		}, function(err) {
+			console.error('create failed : ' + err);
+			done(err);
+		});
+	});
+
+	it('#getObjectSchemaVersions - namespace is required',function(done){
+		database.getObjectSchemaVersions().then(function(result){
+			console.log('getObjectSchemaVersions() : ' + JSON.stringify(result,undefined,2));
+			done(new Error('expected Error'));
+		},function(err){
+			console.log(err);
+			done();
+		});
+	});
+
+	it('#getObjectSchemaVersions - more than 10 versions triggers paging behind the scenes',function(done){
+		var objectSchemas = [];
+		var i;
+		for(i=0;i<15;i++){
+			objectSchemas.push(new ObjectSchema({
+				namespace : 'ns://runrightfast.co/runrightfast-api-gateway',
+				version : '1.0.' + i,
+				description : 'runrightfast-api-gateway config'
+			}));
+		}
+
+		var promises = objectSchemas.map(function(schema){
+			idsToDelete.push(schema.id);
+			return database.createObjectSchema(schema);
+		});
+
+		when.all(promises).then(function(result) {
+			console.log('create response: ' + JSON.stringify(result, undefined, 2));
+
+			database.database.refreshIndex().then(function(){
+				database.getObjectSchemaVersions('ns://runrightfast.co/runrightfast-api-gateway').then(function(result){
+					console.log('getObjectSchemaVersions() : ' + JSON.stringify(result,undefined,2));
+					try{
+						expect(lodash.isArray(result)).to.equal(true);
+						expect(result.length).to.equal(15);
+						done();
+					}catch(err){
+						done(err);
+					}
+				},done);
+			},done);
+
+		}, function(err) {
+			console.error('create failed : ' + err);
+			done(err);
+		});
+	});
+
+
 });

@@ -22,7 +22,7 @@
 		"when":"2.5.x",		
 		"runrightfast-commons":"git://github.com/runrightfast/runrightfast-commons.git#0.0.16",
 		"runrightfast-validator":"git://github.com/runrightfast/runrightfast-validator.git#0.0.13",
-		"runrightfast-elasticsearch":"git://github.com/runrightfast/runrightfast-elasticsearch.git#0.0.8",
+		"runrightfast-elasticsearch":"git://github.com/runrightfast/runrightfast-elasticsearch.git#0.0.9",
 		"hoek":"1.1.x",		
 		"log4js":"0.6.x",
 		"extend":"1.2.x",

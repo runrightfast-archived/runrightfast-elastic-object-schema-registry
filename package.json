@@ -1,6 +1,6 @@
 {
 	"name":"runrightfast-elastic-object-schema-registry",
-	"version":"0.0.3",
+	"version":"0.0.4",
 	"description":"RunRightFast Object Schema Registry Couchbase implementation",
 	"repository":{
 		"type":"git",

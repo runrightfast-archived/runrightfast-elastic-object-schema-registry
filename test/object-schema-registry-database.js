@@ -292,6 +292,47 @@ describe('database', function() {
 		});
 	});
 
+	it('#setObjectSchema - changing the namespace and version is not allowed', function(done) {
+		var schema = new ObjectSchema({
+			namespace : 'ns://runrightfast.co/couchbase',
+			version : '1.0.0',
+			description : 'Couchbase config schema'
+		});
+		idsToDelete.push(schema.id);
+		database.createObjectSchema(schema).then(function(result) {
+			console.log(JSON.stringify(result, undefined, 2));
+			try{
+				var type = {
+					description : 'person name',
+					properties :{
+						fname:{
+							type: 'String',
+							constraints:[
+								{method: 'required',args:[]}
+							]
+						}
+					}
+				};
+				schema.addType('PersonName',type);
+				schema.version = '1.1.1';
+				when(database.setObjectSchema(schema,result._version,'azappala'),
+					function(result){
+						console.log('setObjectSchema() result: ' + JSON.stringify(result,undefined,2));
+						done(new Error('expected an error because version was changed'));
+					},
+					function(err){
+						console.error('setObjectSchema() failed as expected: ' + err);
+						done();
+					});
+			}catch(err){
+				done(err);
+			}
+		}, function(err) {
+			console.error('create failed : ' + err);
+			done(err);
+		});
+	});
+
 	it('#getObjectSchemas',function(done){
 		var objectSchemas = [];
 		var i;
